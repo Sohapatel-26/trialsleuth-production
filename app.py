@@ -29,33 +29,36 @@ if "result" not in st.session_state:
 st.markdown("""
 <style>
 .block-container {padding-top: 3.2rem; max-width: 1280px;}
-.hero {background: linear-gradient(120deg, #0F766E 0%, #134E4A 55%, #1E3A8A 100%);
-       color: #fff; border-radius: 18px; padding: 26px 30px; margin-bottom: 18px;}
-.hero h1 {color: #fff; font-size: 2.0rem; margin: 0 0 6px 0; padding: 0;}
-.hero p {color: #D1FAE5; margin: 0; font-size: 1.0rem; max-width: 820px;}
+.hero {background: linear-gradient(120deg, #E9DFFF 0%, #FFDDE8 50%, #D7F5EA 100%);
+       color: #2E2A3D; border: 1px solid #E7DDF7; border-radius: 18px; padding: 26px 30px; margin-bottom: 18px;}
+.hero h1 {color: #3B2F63; font-size: 2.0rem; margin: 0 0 6px 0; padding: 0;}
+.hero p {color: #4B4466; margin: 0; font-size: 1.0rem; max-width: 820px;}
 .hero .flow {margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;}
-.hero .flow span {background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25);
-       border-radius: 999px; padding: 4px 12px; font-size: 0.82rem; color: #fff;}
-.stat {background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 14px 16px;}
-.stat .n {font-size: 1.6rem; font-weight: 700; color: #0F172A; line-height: 1.1;}
-.stat .l {font-size: 0.8rem; color: #64748B; margin-top: 2px;}
+.hero .flow span {background: rgba(255,255,255,0.65); border: 1px solid rgba(142,124,195,0.35);
+       border-radius: 999px; padding: 4px 12px; font-size: 0.82rem; color: #4B3F7A;}
+.stat {background: #fff; border: 1px solid #EDE6F7; box-shadow: 0 2px 10px rgba(142,124,195,0.08); border-radius: 14px; padding: 14px 16px;}
+.stat .n {font-size: 1.6rem; font-weight: 700; color: #6B5BA8; line-height: 1.1;}
+.stat .l {font-size: 0.8rem; color: #7A7391; margin-top: 2px;}
 .badge {border-radius: 14px; padding: 16px 20px; margin: 6px 0 14px 0; font-weight: 600; font-size: 1.05rem;}
 .badge small {display: block; font-weight: 400; font-size: 0.85rem; margin-top: 4px; opacity: 0.85;}
-.badge.high {background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA;}
-.badge.medium {background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A;}
-.badge.low {background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0;}
-.badge.none {background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1;}
-.mem {background: #fff; border: 1px solid #E2E8F0; border-left: 5px solid #94A3B8;
-      border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.88rem; color: #334155;}
-.mem.past {border-left-color: #DC2626;} .mem.body {border-left-color: #0EA5E9;} .mem.review {border-left-color: #7C3AED;}
+.badge.high {background: #FFE4E8; color: #A3324A; border: 1px solid #FFC9D3;}
+.badge.medium {background: #FFF1DC; color: #9A5B13; border: 1px solid #FFDDB0;}
+.badge.low {background: #DDF6EC; color: #1F6B52; border: 1px solid #B8EBD6;}
+.badge.none {background: #F1EEF8; color: #4B4466; border: 1px solid #DED6EF;}
+.mem {background: #fff; border: 1px solid #EDE6F7; border-left: 5px solid #CFC6E6;
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.88rem; color: #4B4466; box-shadow: 0 2px 8px rgba(142,124,195,0.06);}
+.mem.past {border-left-color: #F7A8B8;} .mem.body {border-left-color: #9ED8F0;} .mem.review {border-left-color: #C9B6F2;}
 .mem .top {display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap;}
-.chip {font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 2px 9px; background: #F1F5F9; color: #334155;}
-.chip.cited {background: #0F766E; color: #fff;}
-.chip.new {background: #7C3AED; color: #fff;}
-.section {font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; color: #64748B;
+.chip {font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 2px 9px; background: #F3EEFB; color: #4B4466;}
+.chip.cited {background: #CDEFE0; color: #1F6B52;}
+.chip.new {background: #E3D8FB; color: #5B3FA8;}
+.section {font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; color: #8E7CC3;
           text-transform: uppercase; margin: 6px 0 8px 0;}
-.empty {background: #fff; border: 1px dashed #CBD5E1; border-radius: 14px; padding: 22px; color: #64748B; text-align: center;}
-[data-testid="stForm"] {background: #fff; border-radius: 16px; border: 1px solid #E2E8F0;}
+.empty {background: #fff; border: 1px dashed #D9CEF0; border-radius: 14px; padding: 22px; color: #7A7391; text-align: center;}
+[data-testid="stForm"] {background: #fff; border-radius: 16px; border: 1px solid #EDE6F7; box-shadow: 0 2px 12px rgba(142,124,195,0.07);}
+[data-testid="stSidebar"] {background: #F6F1FD;}
+.stButton button[kind="primary"], [data-testid="stFormSubmitButton"] button[kind="primaryFormSubmit"] {background: linear-gradient(90deg, #B9A7EC, #F4A9C0); color: #2E2A3D; border: none; font-weight: 600;}
+[data-testid="stFormSubmitButton"] button[kind="primaryFormSubmit"] p {color: #2E2A3D; font-weight: 600;}
 </style>
 """, unsafe_allow_html=True)
 
