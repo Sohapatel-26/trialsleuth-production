@@ -1,0 +1,8 @@
+{"name": "HLV-772",
+ "drug_class": "KRAS inhibitor (oral)",
+ "composition": "Active: HLV-772 400 mg (small molecule, contains an aniline group and a basic amine, lipophilic, cleared by CYP3A4). Excipients: lactose, polysorbate 80, magnesium stearate.",
+ "dose": "800 mg once daily by mouth, escalating to 1200 mg",
+ "patients": "Adults 18 to 85 with advanced lung cancer, including patients with moderate liver impairment (Child-Pugh B)",
+ "trial_design": "First in human, 6 participants per dose group dosed on the same day",
+ "other_medicines": "No restrictions",
+ "known_lab_data": "Animal studies: mild liver enzyme rise in rats at high dose. No heart (hERG) testing done yet."}

@@ -1,0 +1,3 @@
+{"id": "PC-702", "compound": "HLV-650 (sister compound of HLV-772)", "date": "2026-10-30", "drug_class": "KRAS inhibitor (oral)", "features": "same aniline and basic amine core as HLV-772",
+ "outcome": "hERG test showed strong blocking (IC50 1.2 micromolar) and QT prolongation of 25 ms in a dog heart study.",
+ "change_that_worked": "Program paused for heart testing; follow-on compounds required hERG screening and ECG monitoring at every dose step."}

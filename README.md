@@ -1,57 +1,58 @@
 # TrialSleuth AI
 
-**A clinical trial assistant that remembers every Medical Monitor ruling, at every hospital, so the next site gets a consistent, precedent-backed answer.**
+**Check a drug before any human takes it.** TrialSleuth reviews a drug candidate before its first human trial against everything it remembers: how the human body handles drugs, what went wrong with past drugs, and the change that fixed it each time. It flags risks by body system and suggests concrete changes to the drug or the trial. Every new lab or trial result makes the next review better.
 
-In a global clinical trial, 50+ hospitals follow the same protocol, but day-to-day gray areas (a blood draw 4 hours late, a shipment that got warm) are ruled on one case at a time by the Central Medical Monitor. A ruling made for London never reaches Bangalore. Sites drop patients they didn't need to, destroy drug they could have kept, and make inconsistent decisions that auditors flag as protocol drift.
+## The problem
 
-TrialSleuth gives every site a shared memory of those rulings, built on [Hindsight](https://github.com/vectorize-io/hindsight).
+Before a new drug reaches the market it goes through human trials. Even with animal testing first, some participants are still harmed by problems that, looking back, were predictable: a liver risk seen before in a similar molecule, a heart-rhythm risk from a known chemical feature, a dangerous interaction with a common medicine, or a whole group dosed on the same morning.
+
+That knowledge exists, but it is scattered across past trials, papers and people's heads. A plain AI chatbot reads only what you paste in and forgets it afterwards.
+
+TrialSleuth gives the review a memory, built on [Hindsight](https://github.com/vectorize-io/hindsight). It does **not** predict a drug's exact effect or declare a drug safe; it makes sure known risks are designed out before anyone is dosed, and experts make the final call.
 
 ## How Hindsight memory is used
 
 | Hindsight call | What TrialSleuth does with it | Where |
 | --- | --- | --- |
-| `create_bank` | One memory bank per trial (`trial-onc-301`), with a retain mission telling Hindsight to keep case numbers, limits and decisions exact | `memory.ensure_bank` |
-| `retain` | Stores each protocol section (tag `protocol`) and every Medical Monitor ruling (tags `ruling`, `site:<name>`, `topic:<topic>`, with the ruling date as its timestamp) | `memory.save_protocol_section`, `memory.save_ruling` |
-| `recall` | On every coordinator question, recalls the relevant protocol rules **and rulings from all sites**. With memory switched off it filters to `protocol` only, which is the "normal document chatbot" baseline | `memory.recall` |
-| `reflect` | "Patterns across sites" button: Hindsight reasons over all rulings and summarises which kinds of deviation get accepted or rejected | `memory.reflect` |
+| `create_bank` | One growing memory bank, `drug-safety-memory`, told to keep IDs, doses and percentages exact | `memory.ensure_bank` |
+| `retain` | Stores human-body knowledge (tag `body`), past drug outcomes with the change that worked (tag `past-drug`), and a summary of every review the agent writes (tag `review`) | `memory.save_body_fact`, `save_past_drug`, `save_review` |
+| `recall` | For each candidate, recalls the relevant body knowledge, similar past drugs and earlier reviews. The right-hand panel shows exactly what was recalled | `memory.recall` |
+| `reflect` | "What has the agent learned?" summarises lessons across everything in memory | `memory.reflect` |
 
-New rulings added in the app are retained immediately, so the agent's next answer, at any site, already uses them.
-
-**Before vs after memory:**
-- *Protocol only:* "Day 14 draw 4 hours late (window is plus or minus 2 hours) = protocol deviation, escalate."
-- *With memory:* "Likely acceptable under precedent: Case #412 (London) accepted up to 6 hours for documented equipment failure. Note Case #426 (Singapore) rejected 9 hours. Send to the Central Medical Monitor for sign-off."
-- *Look-alike case:* "Patient forgot the appointment" does **not** match #412; the agent cites Case #301 (Madrid, rejected) instead.
-
-TrialSleuth only **recommends**. The human Medical Monitor always makes the decision.
+**Before vs after memory** (the demo):
+- *Memory OFF:* a plain AI reviews HLV-772 with no history and gives generic advice.
+- *Memory ON:* it cites past outcomes, for example KRAS inhibitor liver injury at 800 mg (PC-101) and the CYP3A4 interaction (PC-102). It suggests a 400 mg start dose, weekly liver tests, banning strong CYP3A4 inhibitors, excluding Child-Pugh B patients and sentinel dosing (HB-14).
+- *After learning:* save the new result PC-702 (a sister compound blocked the heart's hERG channel). The next review of HLV-772 now flags a heart-rhythm risk and asks for hERG testing before dosing.
 
 ## Architecture
 
 ```
-Site coordinator (Streamlit chat)
+Company submits drug candidate (Streamlit form)
         |
         v
-   agent.py  --recall-->  Hindsight Cloud memory bank (protocol + rulings from all sites)
-        |                        ^
-        v                        | retain (seed_data.py, "Add ruling" form)
-   Groq LLM (gpt-oss-120b)       |
-        |                  Medical Monitor rulings
+   agent.py --recall--> Hindsight memory bank
+        |               (body knowledge + past drug outcomes + earlier reviews)
+        v                        ^
+   Groq LLM (gpt-oss-120b)       | retain: seed_data.py, "Teach the agent a new result",
+        |                        |         and every review summary
         v
- Recommendation + cited case numbers  -->  Medical Monitor sign-off
+ Risk report by body system + suggested changes  -->  expert safety review
 ```
 
 ## Project files
 
 | File | Job |
 | --- | --- |
-| `app.py` | Streamlit screen: chat on the left, recalled memories on the right, "Add ruling" form in the sidebar |
-| `agent.py` | Recalls memories, asks Groq for a recommendation that cites case numbers |
+| `app.py` | Streamlit screen: candidate form and report, recalled-memory panel, memory on/off, "Teach the agent a new result" |
+| `agent.py` | Recalls memories and asks Groq for a risk report that cites memory IDs |
 | `memory.py` | All Hindsight calls: bank, retain, recall, reflect |
-| `seed_data.py` | Loads the protocol and 17 past rulings (run once) |
-| `data/protocol.md` | Fictional trial protocol ONC-301 |
-| `data/rulings.json` | 17 fictional Medical Monitor rulings across 6 sites |
-| `data/demo_ruling.json` | Case #412, added live during the demo |
+| `seed_data.py` | Loads body knowledge and past drug outcomes (run once) |
+| `data/human_body.json` | 14 human-body pharmacology facts |
+| `data/past_compounds.json` | 9 past drug outcomes with the change that worked |
+| `data/demo_candidate.json` | The demo candidate, HLV-772 |
+| `data/demo_new_result.json` | PC-702, added live during the demo |
 
-All trial data is fictional and made up for demonstration.
+Drug names and outcomes are fictional, written for demonstration. The body facts are simplified summaries of standard pharmacology.
 
 ## Run it
 
@@ -59,32 +60,30 @@ Needs Python 3.10+, a [Hindsight Cloud](https://ui.hindsight.vectorize.io) API k
 
 ```powershell
 python -m venv venv
-venv\Scripts\activate          # Mac/Linux: source venv/bin/activate
+venv\Scripts\activate          # Mac: source venv/bin/activate
 pip install -r requirements.txt
-copy env.example .env          # Mac/Linux: cp env.example .env   then fill in your keys
-python seed_data.py            # once: loads protocol + rulings into Hindsight
-python agent.py                # optional terminal test: memory OFF vs ON
+copy env.example .env          # Mac: cp env.example .env   then fill in your keys
+python seed_data.py            # once: loads body knowledge + past drug outcomes
+python agent.py                # optional terminal test
 streamlit run app.py
 ```
 
 ## Demo script
 
-1. Site **Bangalore**, memory toggle **OFF**. Ask: *"Patient 202 missed the Day 14 PK draw by 4 hours because the lab centrifuge broke. Do we drop the patient?"* The agent is strict: protocol deviation.
-2. In the sidebar, save the London ruling **Case #412** (pre-filled).
-3. Toggle memory **ON** and ask the same question. The agent cites #412, and the right panel shows the London ruling it recalled.
-4. Ask: *"Patient 215 missed the Day 14 PK draw by 4 hours because they forgot the appointment."* The agent says #412 does not apply and cites #301.
-5. Click **Patterns across sites** to show `reflect`. It takes 10 to 30 seconds because Hindsight reasons over every ruling, so say so while it runs.
+1. Turn **Use Hindsight memory** OFF and click **Review before human trial**. Generic answer.
+2. Turn memory ON and review again. The report cites PC-101, PC-102, HB-02, HB-14 and the right panel shows the recalled memories.
+3. In the sidebar, click **Save result to memory** (PC-702 is pre-filled).
+4. Review HLV-772 again. It now flags the heart-rhythm (hERG) risk from PC-702, and the panel shows the earlier review too.
+5. Click **What has the agent learned?** to show `reflect` (takes 10 to 30 seconds).
 
-Case #412 is intentionally left out of `seed_data.py`, and Case #301 must stay in `rulings.json`: steps 1 to 4 depend on both.
-
-**Rerunning the demo from scratch:** once #412 is saved, it stays in memory. To start fresh, set `HINDSIGHT_BANK` in `.env` to a new name (for example `trial-onc-301-v2`) and run `python seed_data.py` again. Each seed run uses Hindsight credit.
+PC-702 is intentionally left out of `seed_data.py`. To rerun the demo from scratch, set `HINDSIGHT_BANK` in `.env` to a new name and run `python seed_data.py` again (each run uses Hindsight credit).
 
 ## Limitations
 
-- **Recall can miss or mismatch.** If a question is worded very differently from a ruling, the right precedent may not be recalled, or a near-miss may be. That is why the right panel shows exactly which rulings were used.
-- **Conflicting or reversed rulings.** The agent sees rulings with their dates but has no formal way to mark one ruling as replacing another. A real system would need ruling versions.
-- **Not a validated system.** A real trial tool would need an audit trail, user sign-in, and GxP validation before use. TrialSleuth only recommends; the Medical Monitor decides.
-- **Fictional data.** The protocol and rulings are invented for demonstration.
+- **Not a replacement for lab tests or trials.** It can only flag risks that its memory covers. A new kind of toxicity that nothing in memory resembles will not be caught.
+- **Recall can miss or mismatch.** That is why every report cites IDs and the panel shows exactly what was used.
+- **Memory quality matters.** A wrong result saved to memory would mislead later reviews; a real system needs review and versioning of what is retained.
+- **Fictional data**, as noted above. A real deployment would need validated sources, an audit trail and regulatory validation.
 
 ## Learn more
 

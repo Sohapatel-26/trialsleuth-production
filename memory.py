@@ -1,11 +1,12 @@
 """memory.py: everything that talks to Hindsight.
 
-TrialSleuth keeps ONE memory bank per clinical trial. Two kinds of memories go in it:
-  - protocol sections (the trial's fixed rules), tagged "protocol"
-  - Medical Monitor rulings from every hospital site, tagged "ruling", "site:<name>", "topic:<topic>"
+TrialSleuth keeps ONE memory bank that grows over time. Three kinds of memories go in it:
+  - human-body knowledge (how organs handle drugs), tagged "body"
+  - outcomes of past drugs: what went wrong and the change that fixed it, tagged "past-drug"
+  - every review the agent has written, tagged "review", so it remembers candidates it has seen
 
-Because rulings from all sites live in the same bank, a question asked at one site
-can recall a precedent that was set at another site. That is the whole idea.
+Each new lab or trial result is retained straight away, so the next review is
+checked against it. That is how the agent gets better with every drug it sees.
 """
 import asyncio
 import os
@@ -15,7 +16,8 @@ from hindsight_client import Hindsight
 
 load_dotenv()
 
-BANK = os.getenv("HINDSIGHT_BANK", "trial-onc-301")
+BANK = os.getenv("HINDSIGHT_BANK", "drug-safety-memory")
+
 
 def _run(work):
     """Run one Hindsight call with a fresh client and its own event loop.
@@ -40,64 +42,66 @@ def _run(work):
 
 
 def ensure_bank() -> None:
-    """Create the trial's memory bank (safe to call more than once)."""
+    """Create the memory bank (safe to call more than once)."""
     _run(lambda c: c.create_bank(
         bank_id=BANK,
         retain_mission=(
-            "This bank holds a clinical trial protocol and Central Medical Monitor rulings. "
-            "Always keep case numbers, site names, time limits, temperatures and the decision "
-            "(accepted or rejected) exactly as written."
+            "This bank holds human-body pharmacology knowledge and outcomes of past drug trials. "
+            "Always keep IDs (HB-.., PC-..), compound names, doses, percentages and the change "
+            "that worked exactly as written."
         ),
     ))
 
 
-def ruling_text(r: dict) -> str:
-    """Turn one ruling into a single readable memory."""
+# ---------- RETAIN ----------
+
+def body_text(k: dict) -> str:
+    return f"Human body knowledge {k['id']} ({k['system']}): {k['fact']}"
+
+
+def past_drug_text(p: dict) -> str:
     return (
-        f"Medical Monitor ruling Case #{r['case_id']} ({r['site']} site, {r['date']}). "
-        f"Topic: {r['topic']}. Decision: {r['decision']}. "
-        f"Situation: {r['situation']} Ruling: {r['ruling']} Reason: {r['reason']}"
+        f"Past drug outcome {p['id']}: {p['compound']} ({p['drug_class']}, {p['date']}). "
+        f"Features: {p['features']}. What happened: {p['outcome']} "
+        f"Change that worked: {p['change_that_worked']}"
     )
 
 
-def save_protocol_section(title: str, text: str) -> None:
+def save_body_fact(k: dict) -> None:
     _run(lambda c: c.retain(
-        bank_id=BANK,
-        content=f"Protocol ONC-301, {title}: {text}",
-        context="clinical trial protocol section",
-        document_id=f"protocol-{title.split('.')[0].strip().lower().replace(' ', '-')}",
-        tags=["protocol"],
-        timestamp="unset",  # the protocol is a standing rule, not an event
+        bank_id=BANK, content=body_text(k), context="human body pharmacology knowledge",
+        document_id=f"body-{k['id']}", tags=["body", f"system:{k['system'].lower()}"],
+        timestamp="unset",  # standing knowledge, not an event
     ))
 
 
-def save_ruling(r: dict) -> None:
-    """RETAIN: store a Medical Monitor ruling so every site can learn from it."""
+def save_past_drug(p: dict) -> None:
+    """Remember what happened with a drug, and what change fixed it."""
     _run(lambda c: c.retain(
-        bank_id=BANK,
-        content=ruling_text(r),
-        context=f"Central Medical Monitor ruling for the {r['site']} site",
-        document_id=f"ruling-{r['case_id']}",
-        metadata={"case_id": str(r["case_id"]), "site": r["site"], "decision": r["decision"]},
-        tags=["ruling", f"site:{r['site'].lower()}", f"topic:{r['topic']}"],
-        timestamp=r["date"],
+        bank_id=BANK, content=past_drug_text(p), context=f"outcome of drug {p['compound']}",
+        document_id=f"past-{p['id']}", metadata={"id": p["id"], "compound": p["compound"]},
+        tags=["past-drug", f"class:{p['drug_class'].lower()}"], timestamp=p["date"],
     ))
 
 
-def recall(question: str, use_rulings: bool = True) -> list:
-    """RECALL: find the protocol rules (and, if allowed, past rulings) relevant to a question.
+def save_review(name: str, summary: str) -> None:
+    """Remember a review the agent wrote, so later reviews can refer back to it."""
+    _run(lambda c: c.retain(
+        bank_id=BANK, content=f"Earlier TrialSleuth review of candidate {name}: {summary}",
+        context=f"previous safety review of {name}", tags=["review", f"candidate:{name.lower()}"],
+    ))
 
-    use_rulings=False is the "no memory" mode for the demo: the agent only sees the
-    protocol, like a normal document chatbot.
-    """
-    kwargs = {"bank_id": BANK, "query": question, "max_tokens": 3000, "include_chunks": True}
-    if not use_rulings:
-        kwargs.update(tags=["protocol"], tags_match="any_strict")
-    response = _run(lambda c: c.recall(**kwargs))
+
+# ---------- RECALL / REFLECT ----------
+
+def recall(query: str) -> tuple:
+    """Find the body knowledge, past drug outcomes and earlier reviews relevant to a candidate."""
+    response = _run(lambda c: c.recall(
+        bank_id=BANK, query=query, max_tokens=5000, include_chunks=True,
+    ))
     return list(response.results or []), (response.chunks or {})
 
 
 def reflect(question: str) -> str:
-    """REFLECT: ask Hindsight to reason across all stored rulings (for patterns across sites)."""
-    response = _run(lambda c: c.reflect(bank_id=BANK, query=question, tags=["ruling"], tags_match="any_strict"))
-    return response.text
+    """Ask Hindsight to reason across everything it has learned."""
+    return _run(lambda c: c.reflect(bank_id=BANK, query=question)).text
