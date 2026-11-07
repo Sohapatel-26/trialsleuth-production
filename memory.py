@@ -7,6 +7,7 @@ TrialSleuth keeps ONE memory bank per clinical trial. Two kinds of memories go i
 Because rulings from all sites live in the same bank, a question asked at one site
 can recall a precedent that was set at another site. That is the whole idea.
 """
+import asyncio
 import os
 
 from dotenv import load_dotenv
@@ -16,31 +17,38 @@ load_dotenv()
 
 BANK = os.getenv("HINDSIGHT_BANK", "trial-onc-301")
 
-_client = None
+def _run(work):
+    """Run one Hindsight call with a fresh client and its own event loop.
 
-
-def client() -> Hindsight:
-    """Create the Hindsight client once and reuse it."""
-    global _client
-    if _client is None:
-        url = os.getenv("HINDSIGHT_URL")
-        key = os.getenv("HINDSIGHT_API_KEY")
-        if not url or not key:
-            raise RuntimeError("Set HINDSIGHT_URL and HINDSIGHT_API_KEY in your .env file.")
-        _client = Hindsight(base_url=url, api_key=key)
-    return _client
+    Streamlit re-runs the script on different threads, and the Hindsight client's
+    network session is tied to the event loop it was created on. Reusing one client
+    across reruns fails with "Event loop is closed", so each call gets its own.
+    """
+    url = os.getenv("HINDSIGHT_URL")
+    key = os.getenv("HINDSIGHT_API_KEY")
+    if not url or not key:
+        raise RuntimeError("Set HINDSIGHT_URL and HINDSIGHT_API_KEY in your .env file.")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    client = Hindsight(base_url=url, api_key=key)
+    try:
+        return work(client)
+    finally:
+        client.close()
+        loop.close()
+        asyncio.set_event_loop(None)
 
 
 def ensure_bank() -> None:
     """Create the trial's memory bank (safe to call more than once)."""
-    client().create_bank(
+    _run(lambda c: c.create_bank(
         bank_id=BANK,
         retain_mission=(
             "This bank holds a clinical trial protocol and Central Medical Monitor rulings. "
             "Always keep case numbers, site names, time limits, temperatures and the decision "
             "(accepted or rejected) exactly as written."
         ),
-    )
+    ))
 
 
 def ruling_text(r: dict) -> str:
@@ -53,19 +61,19 @@ def ruling_text(r: dict) -> str:
 
 
 def save_protocol_section(title: str, text: str) -> None:
-    client().retain(
+    _run(lambda c: c.retain(
         bank_id=BANK,
         content=f"Protocol ONC-301, {title}: {text}",
         context="clinical trial protocol section",
         document_id=f"protocol-{title.split('.')[0].strip().lower().replace(' ', '-')}",
         tags=["protocol"],
         timestamp="unset",  # the protocol is a standing rule, not an event
-    )
+    ))
 
 
 def save_ruling(r: dict) -> None:
     """RETAIN: store a Medical Monitor ruling so every site can learn from it."""
-    client().retain(
+    _run(lambda c: c.retain(
         bank_id=BANK,
         content=ruling_text(r),
         context=f"Central Medical Monitor ruling for the {r['site']} site",
@@ -73,7 +81,7 @@ def save_ruling(r: dict) -> None:
         metadata={"case_id": str(r["case_id"]), "site": r["site"], "decision": r["decision"]},
         tags=["ruling", f"site:{r['site'].lower()}", f"topic:{r['topic']}"],
         timestamp=r["date"],
-    )
+    ))
 
 
 def recall(question: str, use_rulings: bool = True) -> list:
@@ -85,11 +93,11 @@ def recall(question: str, use_rulings: bool = True) -> list:
     kwargs = {"bank_id": BANK, "query": question, "max_tokens": 3000, "include_chunks": True}
     if not use_rulings:
         kwargs.update(tags=["protocol"], tags_match="any_strict")
-    response = client().recall(**kwargs)
+    response = _run(lambda c: c.recall(**kwargs))
     return list(response.results or []), (response.chunks or {})
 
 
 def reflect(question: str) -> str:
     """REFLECT: ask Hindsight to reason across all stored rulings (for patterns across sites)."""
-    response = client().reflect(bank_id=BANK, query=question, tags=["ruling"], tags_match="any_strict")
+    response = _run(lambda c: c.reflect(bank_id=BANK, query=question, tags=["ruling"], tags_match="any_strict"))
     return response.text
