@@ -97,7 +97,7 @@ def save_review(name: str, summary: str) -> None:
 def recall(query: str) -> tuple:
     """Find the body knowledge, past drug outcomes and earlier reviews relevant to a candidate."""
     response = _run(lambda c: c.recall(
-        bank_id=BANK, query=query, max_tokens=5000, include_chunks=True,
+        bank_id=BANK, query=query, max_tokens=2000, include_chunks=True,
     ))
     return list(response.results or []), (response.chunks or {})
 
