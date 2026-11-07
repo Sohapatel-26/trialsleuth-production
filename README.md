@@ -2,6 +2,8 @@
 
 **Check a drug before any human takes it.** TrialSleuth reviews a drug candidate before its first human trial against everything it remembers: how the human body handles drugs, what went wrong with past drugs, and the change that fixed it each time. It flags risks by body system and suggests concrete changes to the drug or the trial. Every new lab or trial result makes the next review better.
 
+**Live demo:** https://trialsleuthai.streamlit.app/
+
 ## The problem
 
 Before a new drug reaches the market it goes through human trials. Even with animal testing first, some participants are still harmed by problems that, looking back, were predictable: a liver risk seen before in a similar molecule, a heart-rhythm risk from a known chemical feature, a dangerous interaction with a common medicine, or a whole group dosed on the same morning.
