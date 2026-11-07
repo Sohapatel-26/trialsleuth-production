@@ -7,6 +7,7 @@ it narrows the risks before people are exposed, and experts make the final call.
 """
 import os
 import re
+import time
 
 from dotenv import load_dotenv
 from groq import Groq
@@ -16,6 +17,10 @@ import memory
 load_dotenv()
 
 MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+# Used if the main model refuses the request (too large or rate limited on the free tier).
+FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "llama-3.3-70b-versatile")
+MAX_RECORDS = 12        # source records sent to the model
+MAX_RECORD_CHARS = 700  # each record is cut to this length
 
 SYSTEM_PROMPT = """You are TrialSleuth, a pre-trial drug safety reviewer.
 A pharmaceutical company submits a drug candidate BEFORE its human trial: composition, dose,
@@ -51,14 +56,12 @@ def source_records(results, chunks) -> list:
 
 
 def _format_memories(results, chunks) -> str:
-    facts = [f"- {m.text}" for m in results]
-    records = [f"- {t}" for t in source_records(results, chunks)]
-    if not facts:
+    """Send each stored record once (not facts + records), capped so the prompt stays small."""
+    records = source_records(results, chunks) or [m.text for m in results]
+    if not records:
         return "(no memories found)"
-    out = "Recalled facts:\n" + "\n".join(facts)
-    if records:
-        out += "\n\nFull source records:\n" + "\n".join(records)
-    return out
+    records = records[:MAX_RECORDS]
+    return "\n".join(f"- {t[:MAX_RECORD_CHARS]}" for t in records)
 
 
 def candidate_query(c: dict) -> str:
@@ -73,6 +76,40 @@ def _summary(report: str) -> str:
     return " ".join(lines[:6])[:800]
 
 
+def _describe(e: Exception) -> str:
+    code = getattr(e, "status_code", None)
+    msg = str(getattr(e, "message", "") or e)[:200]
+    return f"{type(e).__name__} {code}: {msg}" if code else f"{type(e).__name__}: {msg}"
+
+
+def _call(groq, model, messages) -> str:
+    extra = {"reasoning_effort": "low"} if "gpt-oss" in model else {}
+    reply = groq.chat.completions.create(
+        model=model, temperature=0.2, max_tokens=2500, messages=messages, **extra,
+    )
+    text = reply.choices[0].message.content or ""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()  # qwen models think out loud
+
+
+def _ask(messages) -> str:
+    """Main model; on a rate limit wait and retry once; then try the fallback model."""
+    groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    try:
+        return _call(groq, MODEL, messages)
+    except Exception as e:
+        code = getattr(e, "status_code", None)
+        if code not in (413, 429, 500, 502, 503) or not FALLBACK_MODEL:
+            raise
+        print(f"[TrialSleuth] {MODEL} failed ({_describe(e)}), retrying")
+        if code == 429:
+            time.sleep(8)
+            try:
+                return _call(groq, MODEL, messages)
+            except Exception as e2:
+                print(f"[TrialSleuth] retry failed ({_describe(e2)}), using {FALLBACK_MODEL}")
+        return _call(groq, FALLBACK_MODEL, messages)
+
+
 def review(candidate: dict, use_memory: bool = True, remember: bool = True) -> dict:
     """use_memory=False is the "no memory" baseline for the demo: a plain chatbot with no history."""
     if use_memory:
@@ -81,17 +118,12 @@ def review(candidate: dict, use_memory: bool = True, remember: bool = True) -> d
         results, chunks = [], {}
     submission = "\n".join(f"- {k}: {v}" for k, v in candidate.items())
     prompt = f"DRUG CANDIDATE:\n{submission}\n\nMEMORIES:\n{_format_memories(results, chunks)}"
-    groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}]
     try:
-        reply = groq.chat.completions.create(
-            model=MODEL,
-            temperature=0.2,
-            messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-        )
-        text = reply.choices[0].message.content or ""
-        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()  # qwen models think out loud
+        text = _ask(messages)
     except Exception as e:  # network, rate limit, bad key...
-        return {"answer": f"Sorry, the language model is unavailable right now ({type(e).__name__}). Try again in a moment.",
+        return {"answer": f"Sorry, the language model is unavailable right now ({_describe(e)}). "
+                          "Wait a minute and try again.",
                 "memories": results, "chunks": chunks}
     if remember and use_memory:
         try:
