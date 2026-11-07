@@ -1,0 +1,4 @@
+{"case_id": "412", "site": "London", "date": "2026-09-18", "topic": "lab-window", "decision": "Accepted",
+ "situation": "Day 14 PK draw taken 5 hours late because the hospital lab centrifuge failed and a replacement had to be borrowed.",
+ "ruling": "Accepted. A Day 14 PK draw up to 6 hours late is acceptable when caused by documented equipment failure. Log as a minor deviation with the engineer's fault report attached.",
+ "reason": "Drug levels change by under 10 percent within 6 hours of the Day 14 time point, so the sample remains valid. Equipment failure is outside the site's and patient's control."}
