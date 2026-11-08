@@ -8,8 +8,9 @@
 
 ## Demo video
 
-<!-- Replace this line with the video: drag the .mp4 into the GitHub editor here, or paste a YouTube link -->
-_Video coming soon._
+[![Watch the TrialSleuth AI demo](https://img.youtube.com/vi/1VzfxNN22gw/hqdefault.jpg)](https://youtu.be/1VzfxNN22gw)
+
+▶️ **[Watch the demo on YouTube](https://youtu.be/1VzfxNN22gw)**
 
 ## Team
 
