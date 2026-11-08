@@ -15,8 +15,8 @@ _Video coming soon._
 
 | Member | Role | Write-up |
 | --- | --- | --- |
-| Soha Patel ([@Sohapatel-26](https://github.com/Sohapatel-26)) | Research: drug-safety domain and use case | [Catch the Risk Before the First Dose](https://dev.to/sohapatel26/catch-the-risk-before-the-first-dose-building-an-ai-drug-safety-reviewer-that-remembers-npo) |
-| Neelam Geethika Reddy ([@ngeethika15](https://github.com/ngeethika15)) | Build: agent, Hindsight memory, Streamlit app | [How I built TrialSleuth AI](https://dev.to/ngeethika15/how-i-built-trialsleuth-ai-simulating-clinical-trial-safety-before-exposing-human-participants-4e05) |
+| Soha Patel ([@Sohapatel-26](https://github.com/Sohapatel-26)) | Build: agent, Hindsight memory, Streamlit app | [Catch the Risk Before the First Dose](https://dev.to/sohapatel26/catch-the-risk-before-the-first-dose-building-an-ai-drug-safety-reviewer-that-remembers-npo) |
+| Neelam Geethika Reddy ([@ngeethika15](https://github.com/ngeethika15)) | Research: drug-safety domain and use case | [How I built TrialSleuth AI](https://dev.to/ngeethika15/how-i-built-trialsleuth-ai-simulating-clinical-trial-safety-before-exposing-human-participants-4e05) |
 | Yashoda ([@yashodha23](https://github.com/yashodha23)) | Content: articles and posts | _coming soon_ |
 | Riya Ranjan ([@riyaranjan56-new](https://github.com/riyaranjan56-new)) | Demo video | _coming soon_ |
 
