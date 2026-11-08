@@ -4,6 +4,22 @@
 
 **Live demo:** https://trialsleuthai.streamlit.app/
 
+![TrialSleuth AI](docs/images/cover-clay.png)
+
+## Demo video
+
+<!-- Replace this line with the video: drag the .mp4 into the GitHub editor here, or paste a YouTube link -->
+_Video coming soon._
+
+## Team
+
+| Member | Role | Write-up |
+| --- | --- | --- |
+| Soha Patel ([@Sohapatel-26](https://github.com/Sohapatel-26)) | Build: agent, Hindsight memory, Streamlit app | [Catch the Risk Before the First Dose](https://dev.to/sohapatel26/catch-the-risk-before-the-first-dose-building-an-ai-drug-safety-reviewer-that-remembers-npo) |
+| Neelam Geethika Reddy | Research: drug-safety domain and use case | [How I built TrialSleuth AI](https://dev.to/ngeethika15/how-i-built-trialsleuth-ai-simulating-clinical-trial-safety-before-exposing-human-participants-4e05) |
+| Yashoda | Content: articles and posts | _coming soon_ |
+| Riya Ranjan | Demo video | _coming soon_ |
+
 ## The problem
 
 Before a new drug reaches the market it goes through human trials. Even with animal testing first, some participants are still harmed by problems that, looking back, were predictable: a liver risk seen before in a similar molecule, a heart-rhythm risk from a known chemical feature, a dangerous interaction with a common medicine, or a whole group dosed on the same morning.
@@ -13,6 +29,8 @@ That knowledge exists, but it is scattered across past trials, papers and people
 TrialSleuth gives the review a memory, built on [Hindsight](https://github.com/vectorize-io/hindsight). It does **not** predict a drug's exact effect or declare a drug safe; it makes sure known risks are designed out before anyone is dosed, and experts make the final call.
 
 ## How Hindsight memory is used
+
+![How the agent uses Hindsight memory](docs/images/memory-clay.png)
 
 | Hindsight call | What TrialSleuth does with it | Where |
 | --- | --- | --- |
