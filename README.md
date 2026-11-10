@@ -20,7 +20,7 @@ Listed in the order the work happened: research → build → content → video.
 | --- | --- | --- | --- |
 | 1 | Neelam Geethika Reddy ([@ngeethika15](https://github.com/ngeethika15)) | Research: drug-safety domain and use case | [How I built TrialSleuth AI](https://dev.to/ngeethika15/how-i-built-trialsleuth-ai-simulating-clinical-trial-safety-before-exposing-human-participants-4e05) |
 | 2 | Soha Patel ([@Sohapatel-26](https://github.com/Sohapatel-26)) | Build: agent, Hindsight memory, Streamlit app | [Catch the Risk Before the First Dose](https://dev.to/sohapatel26/catch-the-risk-before-the-first-dose-building-an-ai-drug-safety-reviewer-that-remembers-npo) |
-| 3 | Yashoda ([@yashodha23](https://github.com/yashodha23)) | Content: articles and posts | _coming soon_ |
+| 3 | Yashoda ([@yashodha23](https://github.com/yashodha23)) | Content: articles and posts | [Why AI Needs a Memory in Medicine](https://dev.to/yashodha23/why-ai-needs-a-memory-in-medicine-a-plain-language-look-at-agent-memory-hp0) |
 | 4 | Riya Ranjan ([@riyaranjan56-new](https://github.com/riyaranjan56-new)) | Demo video | [Watch an AI Learn in 3 Minutes](https://dev.to/riyaranjan56new/watch-an-ai-learn-in-3-minutes-a-walkthrough-of-the-trialsleuth-ai-demo-3aeg) |
 
 ## The problem
